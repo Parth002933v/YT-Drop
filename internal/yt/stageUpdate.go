@@ -9,15 +9,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func USelectionStage(m *model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func USelectionStage(m *model, msg tea.Msg, cmd *tea.Cmd) {
+
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
-
 		switch msg.String() {
-
-		case tea.KeyCtrlC.String():
-			return m, tea.Quit
 
 		case tea.KeyUp.String():
 			if m.contentTypeSelection.cursor > 0 {
@@ -38,11 +35,9 @@ func USelectionStage(m *model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.stage++
 		}
 	}
-	return m, nil
 }
 
-func UUrlInputStage(m *model, msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
+func UUrlInputStage(m *model, msg tea.Msg, cmd *tea.Cmd) {
 
 	current := &m.questions[m.index]
 
@@ -54,12 +49,8 @@ func UUrlInputStage(m *model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 
-		case tea.KeyCtrlC.String():
-			return m, tea.Quit
-
 		case tea.KeyTab.String():
 			current.input.SetValue(current.defaultVal)
-			return m, nil
 
 		case tea.KeyEnter.String():
 
@@ -87,30 +78,22 @@ func UUrlInputStage(m *model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				current.input.Blur()
 			}
-			return m, cmd
 		}
 
 	default:
-		var cmd tea.Cmd
-		m.bubbles.spinner, cmd = m.bubbles.spinner.Update(msg)
-		return m, cmd
+		m.bubbles.spinner, *cmd = m.bubbles.spinner.Update(msg)
 	}
 
-	current.input, cmd = current.input.Update(msg)
-	return m, cmd
+	current.input, *cmd = current.input.Update(msg)
 }
 
-func UResposeDataStage(m *model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func UResposeDataStage(m *model, msg tea.Msg, cmd *tea.Cmd) {
 
-	var cmd tea.Cmd
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
 
 		switch msg.String() {
-
-		case tea.KeyCtrlC.String():
-			return m, tea.Quit
 
 		case tea.KeyUp.String():
 			if m.QualitySelection.cursor > 0 {
@@ -126,7 +109,6 @@ func UResposeDataStage(m *model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.stage++
 
 			go func() {
-				//stream :  io.ReadCloser  //size : int64 //err: error
 				stream, s, err := m.client.GetDownloadStream(&m.data.video, &m.data.video.Formats[m.QualitySelection.cursor])
 				utils.PError(err)
 
@@ -144,12 +126,10 @@ func UResposeDataStage(m *model, msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.data.downloadPrecentage = progress
 					},
 				}
-
 				_, err = io.Copy(pw, stream)
 				utils.PError(err)
 			}()
 
 		}
 	}
-	return m, cmd
-}
+	}

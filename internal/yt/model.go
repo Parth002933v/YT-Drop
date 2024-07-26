@@ -52,8 +52,8 @@ type Questions struct {
 }
 
 type VideoResData struct {
-	video    youtube.Video
-	playlist youtube.Playlist
+	video              youtube.Video
+	playlist           youtube.Playlist
 	downloadPrecentage float64
 }
 
