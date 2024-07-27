@@ -12,7 +12,7 @@ type YTClientModel struct {
 }
 
 func NewYTClient() *YTClientModel {
-	c := &YTClientModel{Client: youtube.Client{}}
+	c := &YTClientModel{Client: youtube.Client{ChunkSize: 1024 * 1024 * 5}}
 	return c
 }
 

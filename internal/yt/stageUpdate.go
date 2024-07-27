@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/kkdai/youtube/v2"
 )
 
 func USelectionStage(m *model, msg tea.Msg, cmd *tea.Cmd) {
@@ -108,28 +110,48 @@ func UResposeDataStage(m *model, msg tea.Msg, cmd *tea.Cmd) {
 		case tea.KeyEnter.String():
 			m.stage++
 
-			go func() {
-				stream, s, err := m.client.GetDownloadStream(&m.data.video, &m.data.video.Formats[m.QualitySelection.cursor])
-				utils.PError(err)
-
-				defer stream.Close()
-
-				file, err := os.Create(fmt.Sprintf("%s.mp4", utils.SanitizeFileName(m.data.video.Title)))
-				utils.PError(err)
-
-				defer file.Close()
-
-				pw := &ProgressWriter{
-					Writer:     file,
-					TotalBytes: s,
-					ProgressDisplay: func(progress float64) {
-						m.data.downloadPrecentage = progress
-					},
-				}
-				_, err = io.Copy(pw, stream)
-				utils.PError(err)
-			}()
+			go downloadAndMerge(m)
 
 		}
 	}
+}
+
+func downloadAndMerge(m *model) {
+
+	format := m.data.video.Formats[m.QualitySelection.cursor]
+	if strings.Contains(format.MimeType, "avc1") {
+
+		download(m, &format, m.data.video.Title, format.QualityLabel, "mp4")
+		m.data.downloadPrecentage = float64(0)
+
+		download(m, utils.GetMaxAudioQuality(m.data.video.Formats), m.data.video.Title, format.AudioQuality, "mp3")
+
+	} else {
+		download(m, utils.GetMaxAudioQuality(m.data.video.Formats), m.data.video.Title, format.AudioQuality, "mp3")
 	}
+
+}
+
+func download(m *model, format *youtube.Format, fileName string, surfixName string, extention string) {
+	//* start downlod
+	stream, s, err := m.client.GetDownloadStream(&m.data.video, format)
+	utils.PError(err)
+
+	defer stream.Close()
+
+	file, err := os.Create(fmt.Sprintf("%s_%s.%s", utils.SanitizeFileName(fileName), surfixName, extention))
+	utils.PError(err)
+
+	defer file.Close()
+
+	pw := &ProgressWriter{
+		Writer:     file,
+		TotalBytes: s,
+		ProgressDisplay: func(progress float64) {
+			m.data.downloadPrecentage = progress
+		},
+	}
+	_, err = io.Copy(pw, stream)
+	utils.PError(err)
+
+}

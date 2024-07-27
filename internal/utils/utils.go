@@ -82,7 +82,7 @@ func ConvertToMB(size int64) float64 {
 
 }
 
-func GetMaxAudioQuality(f youtube.FormatList) youtube.Format {
+func GetMaxAudioQuality(f youtube.FormatList) *youtube.Format {
 	var format youtube.Format
 
 	for _, val := range f {
@@ -90,7 +90,7 @@ func GetMaxAudioQuality(f youtube.FormatList) youtube.Format {
 			format = val
 		}
 	}
-	return format
+	return &format
 }
 
 func SetRequiredVideoFormat(v *youtube.Video) {

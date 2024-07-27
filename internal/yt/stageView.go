@@ -53,7 +53,6 @@ func VUrlInputStage(m *model, strBuilder *strings.Builder) {
 
 }
 
-// *=========================================================
 func VResposeDataStage(m *model, strBuilder *strings.Builder) {
 	if m.data.video.ID != "" || m.data.playlist.ID == "" {
 		buildVideoMetadata(m, strBuilder)
@@ -61,6 +60,15 @@ func VResposeDataStage(m *model, strBuilder *strings.Builder) {
 	}
 }
 
+func VDownloadProgressStage(m *model, strBuilder *strings.Builder) {
+
+	strBuilder.WriteString("\n")
+
+	strBuilder.WriteString(m.bubbles.progress.ViewAs(m.data.downloadPrecentage))
+
+}
+
+// *=========================================================
 func buildVideoMetadata(m *model, strBuilder *strings.Builder) {
 	var metadataBuilder strings.Builder
 	metadataBuilder.WriteString(fmt.Sprintf("Author   : %s\n", m.data.video.Author))
@@ -89,13 +97,13 @@ func buildFormatSelectionBox(m *model, strBuilder *strings.Builder) {
 
 	if m.stage > 3 {
 		cursor, isSelected := getCursorAndSelectionStatus(m, m.QualitySelection.cursor)
-		formatDetails := getFormatDetails(m.data.video.Formats[m.QualitySelection.cursor], maxAudioFormat, cursor, isSelected)
+		formatDetails := getFormatDetails(m.data.video.Formats[m.QualitySelection.cursor], *maxAudioFormat, cursor, isSelected)
 		formatBuilder.WriteString(formatDetails)
 		formatBuilder.WriteString("\n")
 	} else {
 		for i, format := range m.data.video.Formats {
 			cursor, isSelected := getCursorAndSelectionStatus(m, i)
-			formatDetails := getFormatDetails(format, maxAudioFormat, cursor, isSelected)
+			formatDetails := getFormatDetails(format, *maxAudioFormat, cursor, isSelected)
 
 			formatBuilder.WriteString(formatDetails)
 			formatBuilder.WriteString("\n")
@@ -136,11 +144,3 @@ func getFormatDetails(format, maxAudioFormat youtube.Format, cursor string, isSe
 }
 
 //*=========================================================
-
-func VDownloadProgressStage(m *model, strBuilder *strings.Builder) {
-
-	strBuilder.WriteString("\n")
-
-	strBuilder.WriteString(m.bubbles.progress.ViewAs(m.data.downloadPrecentage))
-
-}
