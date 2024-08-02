@@ -228,6 +228,7 @@ func mergeVideoAudio(m *model, videoPath, audioPath, thumbnailPath string) {
 	F.WriteString(fmt.Sprintf("audioPath: %v\n", audioPath))
 	F.WriteString(fmt.Sprintf("thumbnailPath: %v\n", thumbnailPath))
 
+	outputFileName := fmt.Sprintf("%v.mp4", m.data.video.Title)
 	// Prepare FFmpeg command arguments
 	args := []string{
 		"-y",
@@ -241,7 +242,7 @@ func mergeVideoAudio(m *model, videoPath, audioPath, thumbnailPath string) {
 		"-c:a", "copy",
 		"-c:v:1", "png",
 		"-disposition:v:1", "attached_pic",
-		"output.mp4",
+		outputFileName,
 	}
 
 	// Create and execute the command
