@@ -29,9 +29,21 @@ type model struct {
 
 	bubbles bubbleModel
 
+	downloader []downloader
+
 	isLoading bool
 	data      VideoResData
 	done      bool
+}
+
+type downloader struct {
+	itag         int
+	downloaded   float64
+	videoPath    string
+	audioPath    string
+	thumnailPath string
+	isProcessing bool
+	outputPath   string
 }
 
 type bubbleModel struct {
@@ -41,8 +53,7 @@ type bubbleModel struct {
 
 type SelectionModel struct {
 	choices []string
-	// selected int
-	cursor int
+	cursor  int
 }
 
 type Questions struct {

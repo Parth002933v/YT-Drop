@@ -1,4 +1,4 @@
-package yt
+package ffmpeg
 
 import (
 	utils "YTDownloaderCli/internal/common"
@@ -10,15 +10,17 @@ func Start() {
 
 	model := initialModel()
 
-	F, err := tea.LogToFile("debug.log", "debug")
+	f, err := tea.LogToFile("debug.log", "debug")
 
 	utils.UtilError(err)
 
-	defer F.Close()
+	defer f.Close()
 
-	p := tea.NewProgram(model, tea.WithMouseAllMotion())
+	p := tea.NewProgram(model)
 
 	_, e := p.Run()
 	utils.UtilError(e)
 
 }
+
+

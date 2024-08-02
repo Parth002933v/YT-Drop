@@ -12,12 +12,7 @@ func newRun() *cobra.Command {
 		Short: "short test of how to use it",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Print("test...")
-
-			// p := tea.NewProgram(yt.InitialModel())
-			// if _, err := p.Run(); err != nil {
-			// 	log.Fatal(err)
-			// }
-
+			
 		},
 	}
 	return cmd

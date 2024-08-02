@@ -1,17 +1,21 @@
 package utils
 
 import (
+	"embed"
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/kkdai/youtube/v2"
+	"github.com/mitchellh/go-homedir"
 )
 
-func PError(erro error) {
+func UtilError(erro error) {
 
 	if erro != nil {
 		fmt.Println("fatal:", erro)
@@ -22,7 +26,7 @@ func PError(erro error) {
 func DetermineYouTubeUrlType(u string) string {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
-		PError(err)
+		UtilError(err)
 	}
 
 	queryParams := parsedURL.Query()
@@ -93,6 +97,7 @@ func GetMaxAudioQuality(f youtube.FormatList) *youtube.Format {
 	return &format
 }
 
+// get only selected fomated which is good
 func SetRequiredVideoFormat(v *youtube.Video) {
 
 	var format youtube.FormatList
@@ -105,6 +110,9 @@ func SetRequiredVideoFormat(v *youtube.Video) {
 	v.Formats = format
 }
 
+// set the formate list values in m.QualitySelection.choices
+//
+// in simple word add the formate list in multiselection option
 func SetQualitySelectionChoiceValue(list *[]string, data youtube.FormatList) {
 	var values []string
 	for _, val := range data {
@@ -125,4 +133,59 @@ func SanitizeFileName(fileName string) string {
 
 	// Convert to a valid string by trimming extra spaces and ensuring consistent spaces
 	return strings.Join(strings.Fields(builder.String()), " ")
+}
+
+func ExecutableDir() string {
+
+	path, _ := os.Executable()
+
+	return filepath.Dir(path)
+}
+
+func HomeDir() string {
+	home, err := homedir.Dir()
+	UtilError(err)
+	path := filepath.Join(home, ".ytd")
+	return path
+}
+
+func Log() *os.File {
+
+	F, err := tea.LogToFile("debug.log", "debug")
+	if err != nil {
+		fmt.Println("Error opening log file:", err)
+		return nil
+	}
+
+	return F
+	// defer F.Close()
+}
+
+//go:embed ffmpeg.exe
+var FFmpegFS embed.FS
+
+func ExtractFFmpeg() (string, error) {
+	tempDir, err := os.MkdirTemp("", "ffmpeg") //C:\Users\pp542\AppData\Local\Temp\ffmpeg74917441
+	if err != nil {
+		return "", err
+	}
+
+	ffmpegPath := filepath.Join(tempDir, "ffmpeg.exe") // C:\Users\pp542\AppData\Local\Temp\ffmpeg74917441\ffmpeg.exe
+	ffmpegData, err := FFmpegFS.ReadFile("ffmpeg.exe")
+	if err != nil {
+		return "", err
+	}
+
+	err = os.WriteFile(ffmpegPath, ffmpegData, 0755)
+	if err != nil {
+		return "", err
+	}
+
+	// Open the log file
+	F, err := tea.LogToFile("ffmpeg.log", "ffmpeg")
+	F.WriteString(fmt.Sprintf("tempDir: %v\n", tempDir))
+	F.WriteString(fmt.Sprintf("ffmpegPath: %v\n", ffmpegPath))
+	defer F.Close()
+
+	return ffmpegPath, nil
 }

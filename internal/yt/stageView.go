@@ -1,7 +1,7 @@
 package yt
 
 import (
-	"YTDownloaderCli/internal/utils"
+	"YTDownloaderCli/internal/common"
 	"fmt"
 	"strings"
 
@@ -42,7 +42,7 @@ func VSelectionStage(m *model, strBuilder *strings.Builder) {
 	}
 }
 
-func VUrlInputStage(m *model, strBuilder *strings.Builder) {
+func VUrlInputStage(m *model, strBuilder *strings.Builder) 	{
 	strBuilder.WriteString(utils.WrapText(m.questions[m.index].input.View(), m.width))
 
 	strBuilder.WriteString("\n")

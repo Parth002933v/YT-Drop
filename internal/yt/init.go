@@ -12,35 +12,36 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func newAnswerField() *answerField {
+func newAnswerField(placeholder string) *answerField {
 	a := answerField{}
 	newInput := textinput.New()
-	newInput.Placeholder = "https://youtu.be/l-BgjOr5FJY"
+	// newInput.Placeholder = "https://youtu.be/l-BgjOr5FJY"
+	newInput.Placeholder = placeholder
 	newInput.Focus()
 	a.textinput = newInput
 	return &a
 }
 
-func newQuestion(question string) *Questions {
+func newQuestion(question string, placeholder string, defaultValue string) *Questions {
 
-	q := Questions{question: question, defaultVal: "https://youtu.be/l-BgjOr5FJY"}
+	// q := Questions{question: question, defaultVal: "https://youtu.be/l-BgjOr5FJY"}
+	q := Questions{question: question, defaultVal: defaultValue}
 
-	model := newAnswerField()
+	model := newAnswerField(placeholder)
 	q.input = model
 	return &q
 }
 
 func initialModel() *model {
 
-	questions := []Questions{*newQuestion("provide any youtube video or playlist url")}
+	questions := []Questions{*newQuestion("provide any youtube video or playlist url", "https://youtu.be/l-BgjOr5FJY", "https://youtu.be/l-BgjOr5FJY")}
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	return &model{
-		client: *ytclient.NewYTClient(),
-
+		client:    *ytclient.NewYTClient(),
 		questions: questions,
 		index:     0,
 		stage:     1,
@@ -56,7 +57,7 @@ func initialModel() *model {
 
 func (m model) Init() tea.Cmd {
 	type tickMsg time.Time
-	return tea.Batch(m.questions[m.index].input.Blink, m.bubbles.spinner.Tick,	tea.Tick(time.Second, func(t time.Time) tea.Msg {
+	return tea.Batch(m.questions[m.index].input.Blink, m.bubbles.spinner.Tick, tea.Tick(time.Second, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	}))
 }

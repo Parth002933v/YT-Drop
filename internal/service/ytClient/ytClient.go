@@ -1,7 +1,7 @@
 package ytclient
 
 import (
-	"YTDownloaderCli/internal/utils"
+	utils "YTDownloaderCli/internal/common"
 	"io"
 
 	"github.com/kkdai/youtube/v2"
@@ -12,14 +12,14 @@ type YTClientModel struct {
 }
 
 func NewYTClient() *YTClientModel {
-	c := &YTClientModel{Client: youtube.Client{ChunkSize: 1024 * 1024 * 5}}
+	c := &YTClientModel{Client: youtube.Client{ChunkSize: 1024 * 1024 * 15}}
 	return c
 }
 
 func (c *YTClientModel) GetVideoDetail(url string) *youtube.Video {
 
 	videoData, err := c.Client.GetVideo(url)
-	utils.PError(err)
+	utils.UtilError(err)
 
 	return videoData
 }
@@ -28,7 +28,7 @@ func (c *YTClientModel) GetVideoPlaylistDetail(url string) *youtube.Playlist {
 
 	videoData, err := c.Client.GetPlaylist(url)
 
-	utils.PError(err)
+	utils.UtilError(err)
 
 	return videoData
 
