@@ -11,6 +11,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"time"
 )
 
@@ -60,7 +62,7 @@ func download(ctx context.Context, video *youtube.Video, suffix string, extensio
 	return _file.Name()
 }
 
-func downloadThumbnail(url string, name string) (string, error) {
+func downloadThumbnail(url string, name string) (thumbnailPath string, erro error) {
 	res, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -77,6 +79,7 @@ func downloadThumbnail(url string, name string) (string, error) {
 	return file.Name(), nil
 
 }
+
 func MakeFile(title, suffix string, extension string) (file *os.File, erro error) {
 	fileName := fmt.Sprintf("%s_%s.%v", downloader.SanitizeFilename(title), suffix, extension)
 	return os.Create(downloader.SanitizeFilename(fileName))
@@ -91,36 +94,100 @@ func isFormatAvailable(formatList youtube.FormatList, targetedFormat youtube.For
 	return youtube.Format{}, -1, false
 }
 
-func finalizeFormat(videoFormats youtube.FormatList, selectedFormat *youtube.Format) {
+func finalizeFormat(videoFormats youtube.FormatList, selectedFormat *youtube.Format) error {
 	staticFormats := utils.GetFormats()
 	staticFormats.Sort()
 
-	//utils.FilterFormatsByMineType(staticFormats, "vp9", "opus")
-
-	// Loop until the desired format is found in video.Formats
+	// Loop until the desired format is found in videoFormats
 	for {
-		//selected format in available in fetched video
-		format, _, ok := isFormatAvailable(videoFormats, *selectedFormat)
-		if ok {
-			selectedFormat = &format
-			// Desired format found, break out of the loop
-			break
+		// Check if the selected format is available in the fetched video formats
+		format, _, available := isFormatAvailable(videoFormats, *selectedFormat)
+		if available {
+			*selectedFormat = format // Update the actual content of selectedFormat
+			return nil               // Exit function as format has been found
 		}
 
 		// If the format is not found, check in static formats
 		_, i, foundInStatic := isFormatAvailable(*staticFormats, *selectedFormat)
 		if !foundInStatic {
-			return
+			return fmt.Errorf("format not available in static formats")
 		}
-
-		// Check if we can fall back to a lower format
-		if i+1 < len(*staticFormats) {
-
-			fmt.Printf("Format not found, falling back to lower format with ItagNo: %v\n", (*staticFormats)[i+1].ItagNo)
-			selectedFormat.ItagNo = (*staticFormats)[i+1].ItagNo // Fallback to previous format
+		//if i+1 < len(*staticFormats) {
+		// Attempt to fall back to a lower format (if sorted in ascending quality)
+		if i > 0 { // Check if there’s a lower quality option available
+			fmt.Printf("Format not found, falling back to lower format with ItagNo: %v\n", (*staticFormats)[i-1].ItagNo)
+			*selectedFormat = (*staticFormats)[i-1] // Fallback to lower format
 		} else {
-			// No previous format to fall back to, exit with error
-			return
+			// No lower format available, exit with error
+			return fmt.Errorf("no suitable format found")
 		}
 	}
+}
+
+// mergeVideoAudioThumbnailChapters merges a video and audio file using FFmpeg
+func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, outputName string) error {
+
+	ffmpegPath2, err := utils.ExtractFFmpeg()
+	utils.UtilError(err)
+	defer os.RemoveAll(filepath.Dir(ffmpegPath2)) // Clean up temporary directory
+
+	outputFileName := fmt.Sprintf("%v.mp4", downloader.SanitizeFilename(outputName))
+	// // Prepare FFmpeg command arguments
+	// args := []string{
+	// 	"-y",
+	// 	"-i", videoPath,
+	// 	"-i", thumbnailPath,
+	// 	"-i", audioPath,
+	// 	"-map", "0:v",
+	// 	"-map", "1",
+	// 	"-map", "2:a",
+	// 	"-c:v", "copy",
+	// 	"-c:a", "copy",
+	// 	"-c:v:1", "png",
+	// 	"-disposition:v:1", "attached_pic",
+	// 	outputFileName,
+	// }
+
+	args := []string{
+		"-y",
+		"-i", videoPath,
+		"-i", thumbnailPath,
+		"-i", audioPath,
+	}
+
+	// Conditionally add chaptersPath if it's not nil
+	// if chaptersPath != nil && *chaptersPath != "" {
+	// 	args = append(args, "-i", *chaptersPath)
+	// }
+
+	// Add the remaining arguments
+	args = append(args,
+		"-map", "0:v",
+		"-map", "1",
+		"-map", "2:a",
+		"-c:v", "copy",
+		"-c:a", "copy",
+		"-c:v:1", "png",
+		"-disposition:v:1", "attached_pic",
+	)
+
+	// If chaptersPath was added, map metadata
+	// if chaptersPath != nil && *chaptersPath != "" {
+	// 	args = append(args, "-map_metadata", fmt.Sprintf("%d", len(args)-1))
+	// }
+
+	args = append(args, outputFileName)
+
+	// Create and execute the command
+	cmd := exec.Command(ffmpegPath2, args...)
+
+	// Capture output
+	_, err = cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("FFmpeg command failed: %v", err)
+	}
+
+	// F.WriteString("Video processing completed successfully.\n")
+	// F.WriteString(fmt.Sprintf("FFmpeg output: %s\n", output))
+	return nil
 }

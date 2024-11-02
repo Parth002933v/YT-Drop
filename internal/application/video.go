@@ -5,7 +5,6 @@ import (
 	"YTDownloaderCli/internal/sharedState"
 	"YTDownloaderCli/internal/ui"
 	"YTDownloaderCli/internal/ui/theme"
-	"YTDownloaderCli/internal/utils"
 	"strings"
 
 	"fmt"
@@ -25,7 +24,7 @@ func handleVideo(state *sharedState.SharedState) {
 
 	video.Formats.Sort()
 	//utils.FilterFormatsByMineType(&video.Formats, "vp9", "opus")
-	utils.GetfprmatInFile(video.Formats)
+	//utils.GetfprmatInFile(video.Formats)
 
 	//format selection
 	selectedFormat := ui.FormatSelection(video.Formats)

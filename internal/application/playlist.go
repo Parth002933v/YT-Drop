@@ -36,7 +36,6 @@ func handlePlaylist(state *sharedState.SharedState) {
 	state.SelectedFormats = selectedFormat
 
 	downloader.Start(state.Playlist, &state.SelectedFormats, state.YTclient)
-	fmt.Println("end of downloader.Start()")
 }
 
 func playlistDetailPrint(video *youtube.Playlist) string {
