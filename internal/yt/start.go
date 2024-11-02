@@ -10,11 +10,11 @@ func Start() {
 
 	model := initialModel()
 
-	F, err := tea.LogToFile("debug.log", "debug")
+	// F, err := tea.LogToFile("debug.log", "debug")
 
-	utils.UtilError(err)
+	// utils.UtilError(err)
 
-	defer F.Close()
+	// defer F.Close()
 
 	p := tea.NewProgram(model, tea.WithMouseAllMotion())
 

@@ -1,7 +1,7 @@
 package yt
 
 import (
-	ytclient "YTDownloaderCli/internal/service/ytClient"
+	"YTDownloaderCli/pkg/_youtube"
 	"io"
 	"sync"
 
@@ -13,7 +13,7 @@ import (
 )
 
 type model struct {
-	client ytclient.YTClientModel
+	client _youtube.YTClientModel
 
 	width  int
 	height int

@@ -34,7 +34,7 @@ func newQuestion(question string, placeholder string, defaultValue string) *Ques
 
 func initialModel() *model {
 
-	questions := []Questions{*newQuestion("provide any youtube video or playlist url", "https://youtu.be/l-BgjOr5FJY", "https://youtu.be/l-BgjOr5FJY")}
+	questions := []Questions{*newQuestion("provide any _youtube video or playlist url", "https://youtu.be/l-BgjOr5FJY", "https://youtu.be/l-BgjOr5FJY")}
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot

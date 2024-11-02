@@ -2,13 +2,13 @@ package yt
 
 import (
 	"YTDownloaderCli/internal/common"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -70,21 +70,21 @@ func UUrlInputStage(m *model, msg tea.Msg, cmd *tea.Cmd) {
 						m.isLoading = false
 						m.stage++
 
-						F, err := tea.LogToFile("format.json", "format")
-						if err != nil {
-							fmt.Println("Error opening log file:", err)
-							return
-						}
+						// F, err := tea.LogToFile("format.json", "format")
+						// if err != nil {
+						// 	fmt.Println("Error opening log file:", err)
+						// 	return
+						// }
 
 						m.data.video.Formats.Sort()
 						// var y FormatList
-						d, _ := json.Marshal(detail.Formats)
+						// d, _ := json.Marshal(detail.Formats)
 
-						F.WriteString("\n\n\n\n")
-						F.WriteString(fmt.Sprintf("%v", string(d)))
-						F.WriteString("\n\n\n\n")
+						// F.WriteString("\n\n\n\n")
+						// F.WriteString(fmt.Sprintf("%v", string(d)))
+						// F.WriteString("\n\n\n\n")
 
-						defer F.Close()
+						// defer F.Close()
 
 						utils.SetRequiredVideoFormat(detail)
 						// F.WriteString("\n\n\n\n")
@@ -145,6 +145,7 @@ func downloadAndMerge(m *model) {
 
 	format := m.data.video.Formats[m.QualitySelection.cursor]
 	thumbnailPath := downloadThumnail(m)
+	chapterspath := extractChaptersAsFile(m)
 
 	if strings.Contains(format.MimeType, "avc1") {
 
@@ -152,11 +153,17 @@ func downloadAndMerge(m *model) {
 		m.data.downloadPrecentage = float64(0)
 
 		audioPath := download(m, utils.GetMaxAudioQuality(m.data.video.Formats), m.data.video.Title, format.AudioQuality, "m4a")
-		mergeVideoAudio(m, videoPath, audioPath, thumbnailPath)
+
+		if len(chapterspath) > 0 {
+			mergeVideoAudioThumbnailChapters(m, videoPath, audioPath, thumbnailPath, &chapterspath)
+		} else {
+			mergeVideoAudioThumbnailChapters(m, videoPath, audioPath, thumbnailPath, nil)
+		}
 
 		defer os.RemoveAll(thumbnailPath)
 		defer os.RemoveAll(videoPath)
 		defer os.RemoveAll(audioPath)
+		defer os.RemoveAll(chapterspath)
 	} else {
 		download(m, utils.GetMaxAudioQuality(m.data.video.Formats), m.data.video.Title, format.AudioQuality, "m4a")
 	}
@@ -165,7 +172,7 @@ func downloadAndMerge(m *model) {
 
 func download(m *model, format *youtube.Format, fileName string, surfixName string, extention string) string {
 	//* start downlod
-	stream, s, err := m.client.GetDownloadStream(&m.data.video, format)
+	stream, s, err := m.client.GetDownloadStreamWithContext(&m.data.video, format)
 
 	utils.UtilError(err)
 
@@ -197,18 +204,52 @@ func downloadThumnail(m *model) string {
 	defer res.Body.Close()
 
 	file, err := os.Create(fmt.Sprintf("%s.jpg", utils.SanitizeFileName(thumnailName)))
+	utils.UtilError(err)
+	defer file.Close()
 
 	io.Copy(file, res.Body)
 
-	log := utils.Log()
-	defer log.Close()
-	log.WriteString(fmt.Sprintf("%v", m.data.video.Thumbnails[len(m.data.video.Thumbnails)-1]))
+	// log := utils.Log()
+	// defer log.Close()
+	// log.WriteString(fmt.Sprintf("%v", m.data.video.Thumbnails[len(m.data.video.Thumbnails)-1]))
 
 	return file.Name()
 }
 
-// mergeVideoAudio merges a video and audio file using FFmpeg
-func mergeVideoAudio(m *model, videoPath, audioPath, thumbnailPath string) {
+func extractChapters(description string) []string {
+	re := regexp.MustCompile(`\d{2}:\d{2} .+`)
+	return re.FindAllString(description, -1)
+}
+
+func saveChaptersToFile(chapters []string, videoTitle string) string {
+	fileName := fmt.Sprintf("%s_chapters.txt", utils.SanitizeFileName(videoTitle))
+	filePath := filepath.Join(".", fileName)
+
+	file, err := os.Create(filePath)
+	utils.UtilError(err)
+
+	defer file.Close()
+
+	content := strings.Join(chapters, "\n")
+	_, err = file.WriteString(content)
+	utils.UtilError(err)
+	return filePath
+}
+
+func convertChaterToFFmpegFormat() {}
+func extractChaptersAsFile(m *model) string {
+
+	chapters := extractChapters(m.data.video.Description)
+	if len(chapters) > 0 {
+		chaptersFilePath := saveChaptersToFile(chapters, m.data.video.Title)
+		return chaptersFilePath
+	} else {
+		return ""
+	}
+}
+
+// mergeVideoAudioThumbnailChapters merges a video and audio file using FFmpeg
+func mergeVideoAudioThumbnailChapters(m *model, videoPath, audioPath, thumbnailPath string, chaptersPath *string) {
 
 	ffmpegPath2, err := utils.ExtractFFmpeg()
 	utils.UtilError(err)
@@ -227,14 +268,39 @@ func mergeVideoAudio(m *model, videoPath, audioPath, thumbnailPath string) {
 	F.WriteString(fmt.Sprintf("videoPath: %v\n", videoPath))
 	F.WriteString(fmt.Sprintf("audioPath: %v\n", audioPath))
 	F.WriteString(fmt.Sprintf("thumbnailPath: %v\n", thumbnailPath))
+	F.WriteString(fmt.Sprintf("chapterPath: %v\n", thumbnailPath))
 
 	outputFileName := fmt.Sprintf("%v.mp4", utils.SanitizeFileName(m.data.video.Title))
-	// Prepare FFmpeg command arguments
+	// // Prepare FFmpeg command arguments
+	// args := []string{
+	// 	"-y",
+	// 	"-i", videoPath,
+	// 	"-i", thumbnailPath,
+	// 	"-i", audioPath,
+	// 	"-map", "0:v",
+	// 	"-map", "1",
+	// 	"-map", "2:a",
+	// 	"-c:v", "copy",
+	// 	"-c:a", "copy",
+	// 	"-c:v:1", "png",
+	// 	"-disposition:v:1", "attached_pic",
+	// 	outputFileName,
+	// }
+
 	args := []string{
 		"-y",
 		"-i", videoPath,
 		"-i", thumbnailPath,
 		"-i", audioPath,
+	}
+
+	// Conditionally add chaptersPath if it's not nil
+	// if chaptersPath != nil && *chaptersPath != "" {
+	// 	args = append(args, "-i", *chaptersPath)
+	// }
+
+	// Add the remaining arguments
+	args = append(args,
 		"-map", "0:v",
 		"-map", "1",
 		"-map", "2:a",
@@ -242,8 +308,14 @@ func mergeVideoAudio(m *model, videoPath, audioPath, thumbnailPath string) {
 		"-c:a", "copy",
 		"-c:v:1", "png",
 		"-disposition:v:1", "attached_pic",
-		outputFileName,
-	}
+	)
+
+	// If chaptersPath was added, map metadata
+	// if chaptersPath != nil && *chaptersPath != "" {
+	// 	args = append(args, "-map_metadata", fmt.Sprintf("%d", len(args)-1))
+	// }
+
+	args = append(args, outputFileName)
 
 	// Create and execute the command
 	cmd := exec.Command(ffmpegPath2, args...)
@@ -253,12 +325,12 @@ func mergeVideoAudio(m *model, videoPath, audioPath, thumbnailPath string) {
 	F.WriteString("\n\n")
 
 	// Capture output
-	output, err := cmd.CombinedOutput()
+	_, err = cmd.CombinedOutput()
 	if err != nil {
-		F.WriteString(fmt.Sprintf("FFmpeg command failed: %v\nOutput: %s\n", err, output))
+		F.WriteString(fmt.Sprintf("FFmpeg command failed: %v", err))
 		return
 	}
 
-	F.WriteString("Video processing completed successfully.\n")
-	F.WriteString(fmt.Sprintf("FFmpeg output: %s\n", output))
+	// F.WriteString("Video processing completed successfully.\n")
+	// F.WriteString(fmt.Sprintf("FFmpeg output: %s\n", output))
 }

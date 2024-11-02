@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"YTDownloaderCli/internal/ui/theme"
 	"embed"
 	"fmt"
 	"net/url"
@@ -10,7 +11,8 @@ import (
 	"strings"
 	"unicode"
 
-	tea "github.com/charmbracelet/bubbletea"
+	// tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/kkdai/youtube/v2"
 	"github.com/mitchellh/go-homedir"
 )
@@ -18,7 +20,9 @@ import (
 func UtilError(erro error) {
 
 	if erro != nil {
-		fmt.Println("fatal:", erro)
+		fmt.Println()
+		theme.PrintErrorText(fmt.Sprintf("fatal: %v", erro))
+		fmt.Println()
 		os.Exit(1)
 	}
 }
@@ -86,17 +90,6 @@ func ConvertToMB(size int64) float64 {
 
 }
 
-func GetMaxAudioQuality(f youtube.FormatList) *youtube.Format {
-	var format youtube.Format
-
-	for _, val := range f {
-		if strings.Contains(val.MimeType, "mp4a") && val.ItagNo != 18 && val.AudioQuality == "AUDIO_QUALITY_MEDIUM" {
-			format = val
-		}
-	}
-	return &format
-}
-
 // get only selected fomated which is good
 func SetRequiredVideoFormat(v *youtube.Video) {
 
@@ -149,17 +142,18 @@ func HomeDir() string {
 	return path
 }
 
-func Log() *os.File {
+// func Log() *os.File {
 
-	F, err := tea.LogToFile("debug.log", "debug")
-	if err != nil {
-		fmt.Println("Error opening log file:", err)
-		return nil
-	}
+// 	F, err := tea.LogToFile("debug.log", "debug")
+// 	if err != nil {
+// 		fmt.Println("Error opening log file:", err)
+// 		return nil
+// 	}
 
-	return F
-	// defer F.Close()
-}
+// 	return F
+// 	// defer F.Close()
+// }
+////////////////////=================================================
 
 //go:embed ffmpeg.exe
 var FFmpegFS embed.FS
@@ -181,11 +175,37 @@ func ExtractFFmpeg() (string, error) {
 		return "", err
 	}
 
-	// Open the log file
-	F, err := tea.LogToFile("ffmpeg.log", "ffmpeg")
-	F.WriteString(fmt.Sprintf("tempDir: %v\n", tempDir))
-	F.WriteString(fmt.Sprintf("ffmpegPath: %v\n", ffmpegPath))
-	defer F.Close()
+	// // Open the log file
+	// F, err := tea.LogToFile("ffmpeg.log", "ffmpeg")
+	// F.WriteString(fmt.Sprintf("tempDir: %v\n", tempDir))
+	// F.WriteString(fmt.Sprintf("ffmpegPath: %v\n", ffmpegPath))
+	// defer F.Close()
 
 	return ffmpegPath, nil
+}
+
+func FilterFormatsByMineType(formatList *youtube.FormatList, mimetypes ...string) {
+
+	var newFormatList []youtube.Format
+
+	for _, format := range *formatList {
+		for _, mineType := range mimetypes {
+			if strings.Contains(format.MimeType, mineType) {
+				newFormatList = append(newFormatList, format)
+				break
+			}
+		}
+	}
+
+	*formatList = newFormatList
+}
+func GetMaxAudioQuality(f youtube.FormatList) *youtube.Format {
+	var format youtube.Format
+
+	for _, val := range f {
+		if strings.Contains(val.AudioQuality, "AUDIO_QUALITY_MEDIUM") && strings.Contains(val.MimeType, "opus") {
+			format = val
+		}
+	}
+	return &format
 }
