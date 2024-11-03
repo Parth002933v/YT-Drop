@@ -57,7 +57,7 @@ func (t *DownloadTask) Process(ctx context.Context) {
 	} else if mediaType == utils.Video {
 		queue := make([]*mpb.Bar, 3)
 		task := fmt.Sprintf("#%02d:", t.id)
-		queue[0] = t.p.AddBar(0,
+		queue[0] = t.p.AddBar(t.format.ContentLength,
 			mpb.PrependDecorators(
 				decor.Name(task, decor.WCSyncWidth, decor.WCSyncSpaceR),
 				decor.Name("1/3", decor.WC{C: decor.DindentRight | decor.DextraSpace}),
@@ -68,9 +68,10 @@ func (t *DownloadTask) Process(ctx context.Context) {
 			),
 		)
 		videoPath := download(ctx, video, t.format.QualityLabel, "mp4", t.YTClient, t.format, queue[0])
+		queue[0].SetTotal(t.format.ContentLength, true)
 
 		t.format = utils.GetMaxAudioQuality(video.Formats)
-		queue[1] = t.p.AddBar(0,
+		queue[1] = t.p.AddBar(t.format.ContentLength,
 			mpb.BarQueueAfter(queue[0]),
 			mpb.BarFillerClearOnComplete(),
 			mpb.PrependDecorators(
@@ -83,6 +84,7 @@ func (t *DownloadTask) Process(ctx context.Context) {
 			),
 		)
 		audioPath := download(ctx, video, t.format.AudioQuality, "m4a", t.YTClient, t.format, queue[1])
+		queue[1].SetTotal(t.format.ContentLength, true)
 
 		queue[2] = t.p.New(0,
 			mpb.SpinnerStyle("∙∙∙", "●∙∙", "∙●∙", "∙∙●", "∙∙∙"),

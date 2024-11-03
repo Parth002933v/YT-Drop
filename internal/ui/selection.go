@@ -33,14 +33,16 @@ func TypeSelection() (sharedState.DownloadType, error) {
 }
 
 func FormatSelection(formats []youtube.Format) youtube.Format {
+	maxAudio := utils.GetMaxAudioQuality(formats)
+
 	var formatedOptions []string
 	for _, format := range formats {
 		mediaType, codec, _ := utils.GetVTypeAndCodecFromMimType(format.MimeType)
 		if mediaType == utils.Video {
-			option := fmt.Sprintf("Video: | %s | %.2f MB | %s", format.QualityLabel, utils.BitseToMB(format.ContentLength), codec)
+			option := fmt.Sprintf("Video: | %s | %.2f MB | %s", format.QualityLabel, utils.BitseToMB(format.ContentLength)+utils.BitseToMB(maxAudio.ContentLength), codec)
 			formatedOptions = append(formatedOptions, option)
 		} else if mediaType == utils.Audio {
-			option := fmt.Sprintf("Audio: | %s | %.2f MB | %s", format.AudioSampleRate, utils.BitseToMB(format.ContentLength), codec)
+			option := fmt.Sprintf("Audio: | %s | %.2f MB | %s", format.AudioSampleRate, utils.BitseToMB(format.ContentLength)+utils.BitseToMB(maxAudio.ContentLength), codec)
 			formatedOptions = append(formatedOptions, option)
 		} else {
 			formatedOptions = append(formatedOptions, "Unknown format")

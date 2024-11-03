@@ -202,12 +202,12 @@ func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chapt
 	cmd := exec.Command(ffmpegPath2, args...)
 
 	// Capture output
-	out, err := cmd.CombinedOutput()
+	_, err = cmd.CombinedOutput()
 	if err != nil {
 		F.WriteString(fmt.Sprintf("%v\n", err))
 		return fmt.Errorf("FFmpeg command failed: %v", err)
 	}
 
-	F.WriteString(fmt.Sprintf("log :  %v\n", out))
+	//F.WriteString(fmt.Sprintf("log :  %v\n", out))
 	return nil
 }
