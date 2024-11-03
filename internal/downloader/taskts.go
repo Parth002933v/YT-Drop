@@ -7,10 +7,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/kkdai/youtube/v2"
+	"github.com/kkdai/youtube/v2/downloader"
 	"github.com/vbauerster/mpb/v8"
 	"github.com/vbauerster/mpb/v8/decor"
 	"os"
-	"time"
 )
 
 type DownloadTask struct {
@@ -96,16 +96,22 @@ func (t *DownloadTask) Process(ctx context.Context) {
 		)
 
 		thumbnailPath, _ := downloadThumbnail(video.Thumbnails[len(video.Thumbnails)-1].URL, video.Title)
+
+		chaptersPath, _ := downloadChapters(video.Description, downloader.SanitizeFilename(video.Title))
+
+		defer os.RemoveAll(chaptersPath)
 		defer os.RemoveAll(videoPath)
 		defer os.RemoveAll(audioPath)
 		defer os.RemoveAll(thumbnailPath)
 
-		err := mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, video.Title)
+		queue[2].SetTotal(0, false)
+
+		err := mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chaptersPath, video.Title)
 		if err != nil {
 			queue[2].Abort(true)
 			return
 		}
-		time.Sleep(time.Second * 3)
+		//time.Sleep(time.Second * 3)
 		queue[2].SetTotal(100, true)
 		return
 	} else {

@@ -2,6 +2,7 @@ package downloader
 
 import (
 	"YTDownloaderCli/internal/utils"
+	"YTDownloaderCli/pkg/FFMpeg"
 	"YTDownloaderCli/pkg/_youtube"
 	"context"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -80,6 +82,32 @@ func downloadThumbnail(url string, name string) (thumbnailPath string, erro erro
 
 }
 
+func downloadChapters(description, filename string) (string, error) {
+	F, _ := utils.LogToFileWith("log.log", "log")
+	defer F.Close()
+
+	chapters, err := FFMpeg.ExtractChapters(description)
+	if err != nil {
+		F.WriteString(fmt.Sprintf("error In extractedChaters :  %+v \n", err))
+		return "", err
+	}
+
+	ffmpegFormatedChapters := FFMpeg.FormatForFFmpeg(chapters)
+
+	file, err := MakeFile(filename, "_chapters", "ffmetadata")
+	defer file.Close()
+	if err != nil {
+		return "", err
+	}
+
+	_, err = io.Copy(file, strings.NewReader(ffmpegFormatedChapters))
+	if err != nil {
+		return "", err
+	}
+
+	return file.Name(), nil
+}
+
 func MakeFile(title, suffix string, extension string) (file *os.File, erro error) {
 	fileName := fmt.Sprintf("%s_%s.%v", downloader.SanitizeFilename(title), suffix, extension)
 	return os.Create(downloader.SanitizeFilename(fileName))
@@ -124,30 +152,22 @@ func finalizeFormat(videoFormats youtube.FormatList, selectedFormat *youtube.For
 	}
 }
 
+// .\ffmpeg.exe -y -i "video.mp4" -i "thumbnail.jpg" -i "audio.m4a" -f ffmetadata -i "How to Add Chapters in YouTube Videos From Mobile PC [Hindi]__chapters.ffmetadata" -map 0:v -map 1 -map 2:a -c:v copy -c:a aac -c:v:1 png -disposition:v:1 attached_pic -map_metadata 3 "How to Add Chapters in YouTube Videos From Mobile PC [Hindi].mp4"
 // mergeVideoAudioThumbnailChapters merges a video and audio file using FFmpeg
-func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, outputName string) error {
+func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chaptersPath, outputName string) error {
+	F, err := utils.LogToFileWith("log.log", "log")
+	defer F.Close()
+	if err != nil {
+		return err
+	}
 
 	ffmpegPath2, err := utils.ExtractFFmpeg()
 	utils.UtilError(err)
 	defer os.RemoveAll(filepath.Dir(ffmpegPath2)) // Clean up temporary directory
 
 	outputFileName := fmt.Sprintf("%v.mp4", downloader.SanitizeFilename(outputName))
-	// // Prepare FFmpeg command arguments
-	// args := []string{
-	// 	"-y",
-	// 	"-i", videoPath,
-	// 	"-i", thumbnailPath,
-	// 	"-i", audioPath,
-	// 	"-map", "0:v",
-	// 	"-map", "1",
-	// 	"-map", "2:a",
-	// 	"-c:v", "copy",
-	// 	"-c:a", "copy",
-	// 	"-c:v:1", "png",
-	// 	"-disposition:v:1", "attached_pic",
-	// 	outputFileName,
-	// }
 
+	// Prepare FFmpeg command arguments
 	args := []string{
 		"-y",
 		"-i", videoPath,
@@ -156,9 +176,9 @@ func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, outpu
 	}
 
 	// Conditionally add chaptersPath if it's not nil
-	// if chaptersPath != nil && *chaptersPath != "" {
-	// 	args = append(args, "-i", *chaptersPath)
-	// }
+	if chaptersPath != "" {
+		args = append(args, "-f", "ffmetadata", "-i", chaptersPath)
+	}
 
 	// Add the remaining arguments
 	args = append(args,
@@ -166,15 +186,15 @@ func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, outpu
 		"-map", "1",
 		"-map", "2:a",
 		"-c:v", "copy",
-		"-c:a", "copy",
-		"-c:v:1", "png",
+		"-c:a", "copy", // Re-encode audio to AAC for better MP4 compatibility
+		"-c:v:1", "png", // Set codec for thumbnail image
 		"-disposition:v:1", "attached_pic",
 	)
 
 	// If chaptersPath was added, map metadata
-	// if chaptersPath != nil && *chaptersPath != "" {
-	// 	args = append(args, "-map_metadata", fmt.Sprintf("%d", len(args)-1))
-	// }
+	if chaptersPath != "" {
+		args = append(args, "-map_metadata", "3")
+	}
 
 	args = append(args, outputFileName)
 
@@ -182,12 +202,12 @@ func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, outpu
 	cmd := exec.Command(ffmpegPath2, args...)
 
 	// Capture output
-	_, err = cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
+		F.WriteString(fmt.Sprintf("%v\n", err))
 		return fmt.Errorf("FFmpeg command failed: %v", err)
 	}
 
-	// F.WriteString("Video processing completed successfully.\n")
-	// F.WriteString(fmt.Sprintf("FFmpeg output: %s\n", output))
+	F.WriteString(fmt.Sprintf("log :  %v\n", out))
 	return nil
 }

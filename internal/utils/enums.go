@@ -24,3 +24,7 @@ func GetMediaType(input string) MediaType {
 		return Unknown
 	}
 }
+
+func logToFile() {
+
+}
