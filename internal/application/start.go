@@ -1,10 +1,10 @@
 package application
 
 import (
-	utils "YTDownloaderCli/internal/common"
 	"YTDownloaderCli/internal/config"
 	"YTDownloaderCli/internal/sharedState"
 	"YTDownloaderCli/internal/ui"
+	"YTDownloaderCli/internal/utils"
 	"YTDownloaderCli/pkg/_youtube"
 	"errors"
 	"fmt"

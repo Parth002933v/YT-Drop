@@ -1,7 +1,7 @@
 package _youtube
 
 import (
-	utils "YTDownloaderCli/internal/common"
+	"YTDownloaderCli/internal/utils"
 	"context"
 	"io"
 	"net/http"

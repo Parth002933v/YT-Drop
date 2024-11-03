@@ -113,7 +113,6 @@ func (t *DownloadTask) Process(ctx context.Context) {
 			queue[2].Abort(true)
 			return
 		}
-		//time.Sleep(time.Second * 3)
 		queue[2].SetTotal(100, true)
 		return
 	} else {
