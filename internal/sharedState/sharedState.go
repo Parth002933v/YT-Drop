@@ -3,6 +3,7 @@ package sharedState
 import (
 	"YTDownloaderCli/pkg/_youtube"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/kkdai/youtube/v2"
@@ -40,6 +41,7 @@ type SharedState struct {
 	SelectedFormats youtube.Format
 	CurrentProgress map[string]progressSate // Map of video IDs to their download progress and other state
 	YTclient        _youtube.YTClientModel
+	Log             *os.File
 }
 
 type progressSate struct {

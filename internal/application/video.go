@@ -35,6 +35,7 @@ func handleVideo(state *sharedState.SharedState) {
 		[]*youtube.PlaylistEntry{{ID: video.ID, Author: video.Author, Duration: video.Duration, Title: video.Title, Thumbnails: video.Thumbnails}},
 		&state.SelectedFormats,
 		state.YTclient,
+		state.Log,
 	)
 
 }

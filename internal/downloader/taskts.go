@@ -11,26 +11,40 @@ import (
 	"github.com/vbauerster/mpb/v8"
 	"github.com/vbauerster/mpb/v8/decor"
 	"os"
+	"runtime"
 )
 
 type DownloadTask struct {
-	id            int
+	id            *int
 	playlistEntry *youtube.PlaylistEntry
 	format        *youtube.Format
 	bar           []*mpb.Bar
 	YTClient      _youtube.YTClientModel
 	p             *mpb.Progress
+	log           *os.File
 }
 
 func (t *DownloadTask) Process(ctx context.Context) {
-	video := t.YTClient.GetVideoFromPlaylistEntry(t.playlistEntry)
+	var task string
+	if t.id != nil {
+		task = fmt.Sprintf("#%02d:", *t.id)
+	} else {
+		task = "#00:"
+	}
+
+	video, erro := t.YTClient.GetVideoFromPlaylistEntry(t.playlistEntry)
+	if erro != nil {
+		t.log.WriteString(fmt.Sprintf("error in video retrival : %s\n", erro))
+	}
 	//utils.GetfprmatInFile(video.Formats)
 	if err := finalizeFormat(video.Formats, t.format); err != nil {
-		fmt.Printf("error to determine prefered format : %v\n", err)
+		t.log.WriteString(fmt.Sprintf("task: %02d error to determine prefered format : %v\n", task, err))
+		fmt.Printf("task: %02d error to determine prefered format : %v\n", task, err)
 		return
 	}
 	mediaType, _, erro := utils.GetVTypeAndCodecFromMimType(t.format.MimeType)
 	if erro != nil {
+		t.log.WriteString(fmt.Sprintf("error to determine mimetype : %v\n", erro))
 		return
 	}
 
@@ -56,8 +70,8 @@ func (t *DownloadTask) Process(ctx context.Context) {
 
 	} else if mediaType == utils.Video {
 		queue := make([]*mpb.Bar, 3)
-		task := fmt.Sprintf("#%02d:", t.id)
-		queue[0] = t.p.AddBar(t.format.ContentLength,
+
+		queue[0] = t.p.AddBar(0,
 			mpb.PrependDecorators(
 				decor.Name(task, decor.WCSyncWidth, decor.WCSyncSpaceR),
 				decor.Name("1/3", decor.WC{C: decor.DindentRight | decor.DextraSpace}),
@@ -67,11 +81,8 @@ func (t *DownloadTask) Process(ctx context.Context) {
 					decor.SizeB1024(0), "% .2f / % .2f"),
 			),
 		)
-		videoPath := download(ctx, video, t.format.QualityLabel, "mp4", t.YTClient, t.format, queue[0])
-		queue[0].SetTotal(t.format.ContentLength, true)
 
-		t.format = utils.GetMaxAudioQuality(video.Formats)
-		queue[1] = t.p.AddBar(t.format.ContentLength,
+		queue[1] = t.p.AddBar(0,
 			mpb.BarQueueAfter(queue[0]),
 			mpb.BarFillerClearOnComplete(),
 			mpb.PrependDecorators(
@@ -83,8 +94,6 @@ func (t *DownloadTask) Process(ctx context.Context) {
 					decor.SizeB1024(0), "% .2f / % .2f"),
 			),
 		)
-		audioPath := download(ctx, video, t.format.AudioQuality, "m4a", t.YTClient, t.format, queue[1])
-		queue[1].SetTotal(t.format.ContentLength, true)
 
 		queue[2] = t.p.New(0,
 			mpb.SpinnerStyle("∙∙∙", "●∙∙", "∙●∙", "∙∙●", "∙∙∙"),
@@ -97,8 +106,10 @@ func (t *DownloadTask) Process(ctx context.Context) {
 			),
 		)
 
+		videoPath := download(ctx, video, t.format.QualityLabel, "mp4", t.YTClient, t.format, queue[0])
+		t.format = utils.GetMaxAudioQuality(video.Formats)
+		audioPath := download(ctx, video, t.format.AudioQuality, "m4a", t.YTClient, t.format, queue[1])
 		thumbnailPath, _ := downloadThumbnail(video.Thumbnails[len(video.Thumbnails)-1].URL, video.Title)
-
 		chaptersPath, _ := downloadChapters(video.Description, downloader.SanitizeFilename(video.Title))
 
 		defer os.RemoveAll(chaptersPath)
@@ -108,8 +119,15 @@ func (t *DownloadTask) Process(ctx context.Context) {
 
 		queue[2].SetTotal(0, false)
 
-		err := mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chaptersPath, video.Title)
+		outputFileName := ""
+		if t.id != nil {
+			outputFileName = fmt.Sprintf("%02d %v", *t.id+1, downloader.SanitizeFilename(video.Title))
+		} else {
+			outputFileName = downloader.SanitizeFilename(video.Title)
+		}
+		err := mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chaptersPath, outputFileName, t.log)
 		if err != nil {
+			t.log.WriteString(fmt.Sprintf("FFmpeg command failed: %v\n", err))
 			queue[2].Abort(true)
 			return
 		}
@@ -121,18 +139,28 @@ func (t *DownloadTask) Process(ctx context.Context) {
 	return
 }
 
-func Start(playlist []*youtube.PlaylistEntry, format *youtube.Format, client _youtube.YTClientModel) {
+func Start(playlist []*youtube.PlaylistEntry, format *youtube.Format, client _youtube.YTClientModel, log *os.File) {
 	var tasks []worker.Task
 
 	p := mpb.New(mpb.WithWidth(64), mpb.WithAutoRefresh())
 
 	for i := 0; i < len(playlist); i++ {
-		tasks = append(tasks, &DownloadTask{playlistEntry: playlist[i], format: format, YTClient: client, id: i, p: p})
+		if len(playlist) == 1 {
+			tasks = append(tasks, &DownloadTask{playlistEntry: playlist[i], format: format, YTClient: client, id: nil, p: p, log: log})
+		} else {
+			tasks = append(tasks, &DownloadTask{playlistEntry: playlist[i], format: format, YTClient: client, id: &i, p: p, log: log})
+		}
 	}
 
+	cpuCount := runtime.NumCPU() / 2
+	if cpuCount < 2 {
+		cpuCount = 1
+	}
+
+	fmt.Println(cpuCount)
 	pool := worker.Pool{
 		Tasks:         tasks,
-		MaxConcurrent: 2,
+		MaxConcurrent: cpuCount,
 	}
 
 	pool.Run()

@@ -52,7 +52,6 @@ func (wp *Pool) Run() {
 	}()
 
 	for i := 0; i < wp.MaxConcurrent; i++ {
-		fmt.Printf("worker %v \n", i)
 		go wp.worker(ctx)
 	}
 
@@ -62,7 +61,6 @@ func (wp *Pool) Run() {
 			fmt.Println("context canceled before all tasks are queuedj")
 			break
 		default:
-			fmt.Println("task to chan")
 			wp.taskChan <- task
 		}
 	}

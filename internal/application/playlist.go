@@ -7,7 +7,6 @@ import (
 	"YTDownloaderCli/internal/ui/theme"
 	"YTDownloaderCli/internal/utils"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/kkdai/youtube/v2"
@@ -35,7 +34,7 @@ func handlePlaylist(state *sharedState.SharedState) {
 	selectedFormat := ui.FormatSelection(*formats)
 	state.SelectedFormats = selectedFormat
 
-	downloader.Start(state.Playlist, &state.SelectedFormats, state.YTclient)
+	downloader.Start(state.Playlist, &state.SelectedFormats, state.YTclient, nil)
 }
 
 func playlistDetailPrint(video *youtube.Playlist) string {
@@ -47,16 +46,4 @@ func playlistDetailPrint(video *youtube.Playlist) string {
 	styledText := theme.BoxTheme().Render(metadataBuilder.String())
 
 	return styledText
-}
-
-func GetCodeFromMimType(str string) (codec string) {
-	// Regular expression to capture the codec identifier (e.g., avc1, av01, vp9)
-	re := regexp.MustCompile(`codecs="([a-z0-9]+)`)
-
-	match := re.FindStringSubmatch(str)
-	if len(match) > 1 {
-		return match[1]
-	} else {
-		return "Unknown Codec"
-	}
 }

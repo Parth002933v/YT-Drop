@@ -21,19 +21,14 @@ func NewYTClient() *YTClientModel {
 }
 
 func (c *YTClientModel) GetVideoDetail(url string) *youtube.Video {
-
 	videoData, err := c.Client.GetVideo(url)
 	utils.UtilError(err)
-
 	return videoData
 }
 
 func (c *YTClientModel) GetVideoPlaylistDetail(url string) *youtube.Playlist {
-
 	videoData, err := c.Client.GetPlaylist(url)
-
 	utils.UtilError(err)
-
 	return videoData
 }
 
@@ -45,9 +40,8 @@ func (c *YTClientModel) GetDownloadStream(video *youtube.Video, format *youtube.
 	return c.Client.GetStream(video, format)
 }
 
-func (c *YTClientModel) GetVideoFromPlaylistEntry(playlistEntry *youtube.PlaylistEntry) *youtube.Video {
+func (c *YTClientModel) GetVideoFromPlaylistEntry(playlistEntry *youtube.PlaylistEntry) (*youtube.Video, error) {
 	entry, err := c.Client.VideoFromPlaylistEntry(playlistEntry)
-
-	utils.UtilError(err)
-	return entry
+	//utils.UtilError(err)
+	return entry, err
 }

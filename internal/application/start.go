@@ -15,9 +15,16 @@ import (
 func Start(config *config.Config) {
 
 	defer os.Exit(0)
+	F, e := utils.LogToFileWith("log.log", "log")
+	if e != nil {
+		fmt.Printf("Log File error : %s\n", e)
+	}
+
 	state := &sharedState.SharedState{
 		YTclient: *_youtube.NewYTClient(),
+		Log:      F,
 	}
+	defer state.Log.Close()
 
 	fmt.Println(ui.Logo())
 	fmt.Println(ui.SubTitle())
@@ -41,5 +48,4 @@ func Start(config *config.Config) {
 	default:
 		utils.UtilError(errors.New("invalid url"))
 	}
-	//fmt.Println("end of start.go")
 }

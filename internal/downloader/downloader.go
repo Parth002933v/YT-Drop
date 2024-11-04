@@ -142,9 +142,9 @@ func finalizeFormat(videoFormats youtube.FormatList, selectedFormat *youtube.For
 		}
 		//if i+1 < len(*staticFormats) {
 		// Attempt to fall back to a lower format (if sorted in ascending quality)
-		if i > 0 { // Check if there’s a lower quality option available
-			fmt.Printf("Format not found, falling back to lower format with ItagNo: %v\n", (*staticFormats)[i-1].ItagNo)
-			*selectedFormat = (*staticFormats)[i-1] // Fallback to lower format
+		if i >= 0 { // Check if there’s a lower quality option available
+			//fmt.Printf("Format: %v not found, falling back to lower format with ItagNo: %v\n\n", (*staticFormats)[i].QualityLabel, (*staticFormats)[i+1].QualityLabel)
+			*selectedFormat = (*staticFormats)[i+1] // Fallback to lower format
 		} else {
 			// No lower format available, exit with error
 			return fmt.Errorf("no suitable format found")
@@ -154,13 +154,7 @@ func finalizeFormat(videoFormats youtube.FormatList, selectedFormat *youtube.For
 
 // .\ffmpeg.exe -y -i "video.mp4" -i "thumbnail.jpg" -i "audio.m4a" -f ffmetadata -i "How to Add Chapters in YouTube Videos From Mobile PC [Hindi]__chapters.ffmetadata" -map 0:v -map 1 -map 2:a -c:v copy -c:a aac -c:v:1 png -disposition:v:1 attached_pic -map_metadata 3 "How to Add Chapters in YouTube Videos From Mobile PC [Hindi].mp4"
 // mergeVideoAudioThumbnailChapters merges a video and audio file using FFmpeg
-func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chaptersPath, outputName string) error {
-	F, err := utils.LogToFileWith("log.log", "log")
-	defer F.Close()
-	if err != nil {
-		return err
-	}
-
+func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chaptersPath, outputName string, log *os.File) error {
 	ffmpegPath2, err := utils.ExtractFFmpeg()
 	utils.UtilError(err)
 	defer os.RemoveAll(filepath.Dir(ffmpegPath2)) // Clean up temporary directory
@@ -204,10 +198,7 @@ func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chapt
 	// Capture output
 	_, err = cmd.CombinedOutput()
 	if err != nil {
-		F.WriteString(fmt.Sprintf("%v\n", err))
 		return fmt.Errorf("FFmpeg command failed: %v", err)
 	}
-
-	//F.WriteString(fmt.Sprintf("log :  %v\n", out))
 	return nil
 }
