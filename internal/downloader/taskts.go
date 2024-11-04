@@ -16,7 +16,7 @@ import (
 
 type DownloadTask struct {
 	id            *int
-	playlistEntry *youtube.PlaylistEntry
+	playlistEntry *_youtube.PlaylistEntry
 	format        *youtube.Format
 	bar           []*mpb.Bar
 	YTClient      _youtube.YTClientModel
@@ -36,6 +36,7 @@ func (t *DownloadTask) Process(ctx context.Context) {
 	if erro != nil {
 		t.log.WriteString(fmt.Sprintf("error in video retrival : %s\n", erro))
 	}
+
 	//utils.GetfprmatInFile(video.Formats)
 	if err := finalizeFormat(video.Formats, t.format); err != nil {
 		t.log.WriteString(fmt.Sprintf("task: %02d error to determine prefered format : %v\n", task, err))
@@ -121,7 +122,7 @@ func (t *DownloadTask) Process(ctx context.Context) {
 
 		outputFileName := ""
 		if t.id != nil {
-			outputFileName = fmt.Sprintf("%02d %v", *t.id+1, downloader.SanitizeFilename(video.Title))
+			outputFileName = fmt.Sprintf("%02d %v", t.playlistEntry.VideoIndex+1, downloader.SanitizeFilename(video.Title))
 		} else {
 			outputFileName = downloader.SanitizeFilename(video.Title)
 		}
@@ -139,7 +140,7 @@ func (t *DownloadTask) Process(ctx context.Context) {
 	return
 }
 
-func Start(playlist []*youtube.PlaylistEntry, format *youtube.Format, client _youtube.YTClientModel, log *os.File) {
+func Start(playlist []*_youtube.PlaylistEntry, format *youtube.Format, client _youtube.YTClientModel, log *os.File) {
 	var tasks []worker.Task
 
 	p := mpb.New(mpb.WithWidth(64), mpb.WithAutoRefresh())

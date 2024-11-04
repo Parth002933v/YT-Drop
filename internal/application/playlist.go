@@ -7,22 +7,23 @@ import (
 	"YTDownloaderCli/internal/ui/theme"
 	"YTDownloaderCli/internal/utils"
 	"fmt"
-	"strings"
-
 	"github.com/kkdai/youtube/v2"
+	"strings"
 )
 
 func handlePlaylist(state *sharedState.SharedState) {
 
 	spinner := ui.Spinner()
-	res := state.YTclient.GetVideoPlaylistDetail(state.URl)
+	playlist := state.YTclient.GetVideoPlaylistDetail(state.URl)
 	spinner.Success()
 
 	// print playlist detail
-	fmt.Println(playlistDetailPrint(res))
+	fmt.Println(playlistDetailPrint(playlist))
+
+	newPlaylist := state.YTclient.AddPlaylistNumbering(playlist)
 
 	// video selection
-	selectedVideos := ui.MultiVideoSelection(res.Videos)
+	selectedVideos := ui.MultiVideoSelection(newPlaylist.Videos)
 	state.Playlist = selectedVideos
 
 	//format lists

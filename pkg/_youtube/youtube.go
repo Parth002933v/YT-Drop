@@ -30,6 +30,22 @@ func (c *YTClientModel) GetVideoPlaylistDetail(url string) *youtube.Playlist {
 	videoData, err := c.Client.GetPlaylist(url)
 	utils.UtilError(err)
 	return videoData
+
+}
+
+func (c *YTClientModel) AddPlaylistNumbering(p *youtube.Playlist) *Playlist {
+	var playlistEntries []*PlaylistEntry
+	for i, video := range p.Videos {
+		playlistEntries = append(playlistEntries, &PlaylistEntry{
+			PlaylistEntry: video,
+			VideoIndex:    i,
+		})
+	}
+
+	return &Playlist{
+		Playlist: p,
+		Videos:   playlistEntries,
+	}
 }
 
 func (c *YTClientModel) GetDownloadStreamWithContext(video *youtube.Video, format *youtube.Format, ctx context.Context) (io.ReadCloser, int64, error) {
@@ -40,8 +56,14 @@ func (c *YTClientModel) GetDownloadStream(video *youtube.Video, format *youtube.
 	return c.Client.GetStream(video, format)
 }
 
-func (c *YTClientModel) GetVideoFromPlaylistEntry(playlistEntry *youtube.PlaylistEntry) (*youtube.Video, error) {
-	entry, err := c.Client.VideoFromPlaylistEntry(playlistEntry)
+func (c *YTClientModel) GetVideoFromPlaylistEntry(playlistEntry *PlaylistEntry) (*youtube.Video, error) {
+	entry, err := c.Client.VideoFromPlaylistEntry(&youtube.PlaylistEntry{
+		ID:         playlistEntry.ID,
+		Title:      playlistEntry.Title,
+		Author:     playlistEntry.Author,
+		Duration:   playlistEntry.Duration,
+		Thumbnails: playlistEntry.Thumbnails,
+	})
 	//utils.UtilError(err)
 	return entry, err
 }

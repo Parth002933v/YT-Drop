@@ -5,6 +5,7 @@ import (
 	"YTDownloaderCli/internal/sharedState"
 	"YTDownloaderCli/internal/ui"
 	"YTDownloaderCli/internal/ui/theme"
+	"YTDownloaderCli/pkg/_youtube"
 	"strings"
 
 	"fmt"
@@ -32,7 +33,17 @@ func handleVideo(state *sharedState.SharedState) {
 	state.SelectedFormats = selectedFormat
 
 	downloader.Start(
-		[]*youtube.PlaylistEntry{{ID: video.ID, Author: video.Author, Duration: video.Duration, Title: video.Title, Thumbnails: video.Thumbnails}},
+		[]*_youtube.PlaylistEntry{
+			{
+				PlaylistEntry: &youtube.PlaylistEntry{
+					ID:         video.ID,
+					Title:      video.Title,
+					Author:     video.Author,
+					Duration:   video.Duration,
+					Thumbnails: video.Thumbnails,
+				},
+			},
+		},
 		&state.SelectedFormats,
 		state.YTclient,
 		state.Log,

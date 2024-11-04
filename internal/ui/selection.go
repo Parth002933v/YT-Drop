@@ -3,6 +3,7 @@ package ui
 import (
 	"YTDownloaderCli/internal/sharedState"
 	"YTDownloaderCli/internal/utils"
+	"YTDownloaderCli/pkg/_youtube"
 	"fmt"
 	"github.com/kkdai/youtube/v2"
 	"github.com/pterm/pterm"
@@ -65,7 +66,7 @@ func FormatSelection(formats []youtube.Format) youtube.Format {
 
 }
 
-func MultiVideoSelection(videos []*youtube.PlaylistEntry) []*youtube.PlaylistEntry {
+func MultiVideoSelection(videos []*_youtube.PlaylistEntry) []*_youtube.PlaylistEntry {
 	var fomatedVideos []string
 
 	for i, video := range videos {
@@ -80,7 +81,7 @@ func MultiVideoSelection(videos []*youtube.PlaylistEntry) []*youtube.PlaylistEnt
 		WithDefaultText("Select Video You want to download").
 		WithCheckmark(&pterm.Checkmark{Checked: pterm.Green("✓"), Unchecked: pterm.Red(" ")}).Show()
 
-	var selectedVideos []*youtube.PlaylistEntry
+	var selectedVideos []*_youtube.PlaylistEntry
 
 	for i, option := range fomatedVideos {
 		for _, selectedOption := range selectedOption {

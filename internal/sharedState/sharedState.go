@@ -37,7 +37,7 @@ type SharedState struct {
 	DownloadType DownloadType
 	URl          string
 	//Videos          []videoInfo
-	Playlist        []*youtube.PlaylistEntry
+	Playlist        []*_youtube.PlaylistEntry
 	SelectedFormats youtube.Format
 	CurrentProgress map[string]progressSate // Map of video IDs to their download progress and other state
 	YTclient        _youtube.YTClientModel
