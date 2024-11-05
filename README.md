@@ -26,15 +26,8 @@ A command-line tool for downloading YouTube videos and entire playlists with a c
 3. Choose your desired download format (e.g., MP4, MP3).
 4. The application will display a progress bar for each download, allowing you to monitor the status.
 
-## Example Commands
+## Preview
 
-```bash
-# For downloading a single video
-./youtube-downloader-cli --type video --url "https://www.youtube.com/watch?v=example"
-
-# For downloading a playlist
-./youtube-downloader-cli --type playlist --url "https://www.youtube.com/playlist?list=example"
-```
 
 ## Contributing
 
