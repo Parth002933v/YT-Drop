@@ -40,7 +40,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Acknowledgements
 
 - [YouTube API](https://developers.google.com/youtube/v3) for video information and download capabilities.
-- [ffmpeg](https://ffmpeg.org/) for video processing (if applicable).
+- [ffmpeg](https://ffmpeg.org/) for video processing.
 
 ---
 
