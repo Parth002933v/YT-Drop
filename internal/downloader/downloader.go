@@ -82,11 +82,11 @@ func downloadThumbnail(url string, name string) (thumbnailPath string, erro erro
 
 }
 
-func downloadChapters(description, filename string) (string, error) {
+func downloadChapters(description, filename string, duration time.Duration) (string, error) {
 	F, _ := utils.LogToFileWith("log.log", "log")
 	defer F.Close()
 
-	chapters, err := FFMpeg.ExtractChapters(description)
+	chapters, err := FFMpeg.ExtractChapters(description, int64(duration))
 	if err != nil {
 		F.WriteString(fmt.Sprintf("error In extractedChaters :  %+v \n", err))
 		return "", err
@@ -196,9 +196,11 @@ func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chapt
 	cmd := exec.Command(ffmpegPath2, args...)
 
 	// Capture output
-	_, err = cmd.CombinedOutput()
+	stdout, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("FFmpeg command failed: %v", err)
+
+		log.WriteString(fmt.Sprintf("Command: %v %v\n", ffmpegPath2, strings.Join(args, " ")))
+		return fmt.Errorf("FFmpeg command failed: %v\t\n%v: ", err, string(stdout))
 	}
 	return nil
 }

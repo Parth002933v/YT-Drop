@@ -38,15 +38,16 @@ func parseTime(timeStr string) (int64, error) {
 }
 
 // ExtractChapters parses the input text and returns a slice of Chapter structs
-func ExtractChapters(text string) ([]Chapter, error) {
-	// Define the regex pattern
-	pattern := regexp.MustCompile(`(?m)(?P<time>\d{2}:\d{2}:\d{2}|\d{2}:\d{2})\)?\s(-)?(\s)?(?P<chapterTitle>.*)`)
+func ExtractChapters(text string, videoDuration int64) ([]Chapter, error) {
+	// Updated regex pattern to handle (HH:MM:SS) or (MM:SS) formats and optional leading or trailing spaces
+	pattern := regexp.MustCompile(`\((\d{1,2}:\d{2}(?::\d{2})?)\)\s*(.*)`)
+	//pattern := regexp.MustCompile((?m)(?P<time>\d{2}:\d{2}:\d{2}|\d{2}:\d{2})\)?\s(-)?(\s)?(?P<chapterTitle>.*))
 	matches := pattern.FindAllStringSubmatch(text, -1)
 
 	var chapters []Chapter
 	for _, match := range matches {
-		timeStr := match[1]
-		title := strings.TrimSpace(match[4])
+		timeStr := match[1] // Captured timestamp
+		title := match[2]   // Captured chapter title
 
 		startTime, err := parseTime(timeStr)
 		if err != nil {
@@ -59,12 +60,12 @@ func ExtractChapters(text string) ([]Chapter, error) {
 		})
 	}
 
-	// Calculate end times (each chapter's end time is the next chapter's start time, last chapter remains open-ended)
+	// Set end times for each chapter (next chapter's start time or video duration for the last chapter)
 	for i := 0; i < len(chapters)-1; i++ {
 		chapters[i].EndTime = chapters[i+1].StartTime
 	}
 	if len(chapters) > 0 {
-		chapters[len(chapters)-1].EndTime = chapters[len(chapters)-1].StartTime + 10*1000 // Last chapter end time (arbitrary 10 seconds)
+		chapters[len(chapters)-1].EndTime = videoDuration
 	}
 
 	return chapters, nil

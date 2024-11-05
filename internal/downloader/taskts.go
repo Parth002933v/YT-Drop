@@ -111,7 +111,7 @@ func (t *DownloadTask) Process(ctx context.Context) {
 		t.format = utils.GetMaxAudioQuality(video.Formats)
 		audioPath := download(ctx, video, t.format.AudioQuality, "m4a", t.YTClient, t.format, queue[1])
 		thumbnailPath, _ := downloadThumbnail(video.Thumbnails[len(video.Thumbnails)-1].URL, video.Title)
-		chaptersPath, _ := downloadChapters(video.Description, downloader.SanitizeFilename(video.Title))
+		chaptersPath, _ := downloadChapters(video.Description, downloader.SanitizeFilename(video.Title), video.Duration)
 
 		defer os.RemoveAll(chaptersPath)
 		defer os.RemoveAll(videoPath)
@@ -129,6 +129,7 @@ func (t *DownloadTask) Process(ctx context.Context) {
 		err := mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chaptersPath, outputFileName, t.log)
 		if err != nil {
 			t.log.WriteString(fmt.Sprintf("FFmpeg command failed: %v\n", err))
+			fmt.Printf("processing failed for task : %v \n", task)
 			queue[2].Abort(true)
 			return
 		}
