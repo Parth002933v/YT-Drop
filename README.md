@@ -1,5 +1,5 @@
 
-# YouTube Downloader CLI
+# YT Drop CLI
 
 A command-line tool for downloading YouTube videos and entire playlists with a clean and user-friendly interface. Download your favorite content in just a few clicks!
 
