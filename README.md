@@ -13,7 +13,7 @@ A command-line tool for downloading YouTube videos and entire playlists with a c
 
 ## Installation
 
-1. **Download the pre-built binary** from the [Releases](https://github.com/yourusername/yourrepository/releases) section.
+1. **Download the pre-built binary** from the [Releases](https://github.com/Parth002933v/YT-Drop/releases) section.
 2. Unzip the downloaded file to your desired location.
 3. Open a terminal and navigate to the directory where you unzipped the application.
 
