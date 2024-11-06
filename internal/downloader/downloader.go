@@ -154,7 +154,7 @@ func finalizeFormat(videoFormats youtube.FormatList, selectedFormat *youtube.For
 
 // .\ffmpeg.exe -y -i "video.mp4" -i "thumbnail.jpg" -i "audio.m4a" -f ffmetadata -i "How to Add Chapters in YouTube Videos From Mobile PC [Hindi]__chapters.ffmetadata" -map 0:v -map 1 -map 2:a -c:v copy -c:a aac -c:v:1 png -disposition:v:1 attached_pic -map_metadata 3 "How to Add Chapters in YouTube Videos From Mobile PC [Hindi].mp4"
 // mergeVideoAudioThumbnailChapters merges a video and audio file using FFmpeg
-func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chaptersPath, outputName string, log *os.File) error {
+func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chaptersPath, outputName string, log *os.File, metadata Metadata) error {
 	ffmpegPath2, err := utils.ExtractFFmpeg()
 	utils.UtilError(err)
 	defer os.RemoveAll(filepath.Dir(ffmpegPath2)) // Clean up temporary directory
@@ -189,6 +189,12 @@ func mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chapt
 	if chaptersPath != "" {
 		args = append(args, "-map_metadata", "3")
 	}
+
+	args = append(args,
+		"-metadata", fmt.Sprintf("title=%v", metadata.title),
+		"-metadata", fmt.Sprintf("artist=%v", metadata.author),
+		"-metadata", fmt.Sprintf("comment=%v", metadata.comments),
+	)
 
 	args = append(args, outputFileName)
 

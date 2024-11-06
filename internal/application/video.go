@@ -28,7 +28,7 @@ func handleVideo(state *sharedState.SharedState) {
 	//utils.GetfprmatInFile(video.Formats)
 
 	//format selection
-	selectedFormat := ui.FormatSelection(video.Formats)
+	selectedFormat := ui.FormatSelection(video.Formats, false)
 
 	state.SelectedFormats = selectedFormat
 

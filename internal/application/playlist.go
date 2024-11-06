@@ -32,7 +32,7 @@ func handlePlaylist(state *sharedState.SharedState) {
 	//utils.FilterFormatsByMineType(formats, "vp9", "opus")
 	//utils.GetfprmatInFile(*formats)
 	//formats selection
-	selectedFormat := ui.FormatSelection(*formats)
+	selectedFormat := ui.FormatSelection(*formats, true)
 	state.SelectedFormats = selectedFormat
 
 	downloader.Start(state.Playlist, &state.SelectedFormats, state.YTclient, nil)

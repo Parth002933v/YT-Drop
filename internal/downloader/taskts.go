@@ -24,6 +24,12 @@ type DownloadTask struct {
 	log           *os.File
 }
 
+type Metadata struct {
+	title    string
+	author   string
+	comments string
+}
+
 func (t *DownloadTask) Process(ctx context.Context) {
 	var task string
 	if t.id != nil {
@@ -43,6 +49,7 @@ func (t *DownloadTask) Process(ctx context.Context) {
 		fmt.Printf("task: %02d error to determine prefered format : %v\n", task, err)
 		return
 	}
+
 	mediaType, _, erro := utils.GetVTypeAndCodecFromMimType(t.format.MimeType)
 	if erro != nil {
 		t.log.WriteString(fmt.Sprintf("error to determine mimetype : %v\n", erro))
@@ -67,7 +74,7 @@ func (t *DownloadTask) Process(ctx context.Context) {
 				),
 			),
 		)
-		_ = download(ctx, video, t.format.AudioQuality, "m4a", t.YTClient, t.format, bar)
+		_ = download(ctx, video, "", "m4a", t.YTClient, t.format, bar)
 
 	} else if mediaType == utils.Video {
 		queue := make([]*mpb.Bar, 3)
@@ -107,6 +114,18 @@ func (t *DownloadTask) Process(ctx context.Context) {
 			),
 		)
 
+		metadata := Metadata{
+			title:    video.Title,
+			author:   video.Author,
+			comments: video.Description,
+		}
+		outputFileName := ""
+		if t.id != nil {
+			outputFileName = fmt.Sprintf("%02d %v [%v]", t.playlistEntry.VideoIndex+1, downloader.SanitizeFilename(video.Title), t.format.QualityLabel)
+		} else {
+			outputFileName = fmt.Sprintf("%v [%v]", downloader.SanitizeFilename(video.Title), t.format.QualityLabel)
+		}
+
 		videoPath := download(ctx, video, t.format.QualityLabel, "mp4", t.YTClient, t.format, queue[0])
 		t.format = utils.GetMaxAudioQuality(video.Formats)
 		audioPath := download(ctx, video, t.format.AudioQuality, "m4a", t.YTClient, t.format, queue[1])
@@ -120,13 +139,7 @@ func (t *DownloadTask) Process(ctx context.Context) {
 
 		queue[2].SetTotal(0, false)
 
-		outputFileName := ""
-		if t.id != nil {
-			outputFileName = fmt.Sprintf("%02d %v", t.playlistEntry.VideoIndex+1, downloader.SanitizeFilename(video.Title))
-		} else {
-			outputFileName = downloader.SanitizeFilename(video.Title)
-		}
-		err := mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chaptersPath, outputFileName, t.log)
+		err := mergeVideoAudioThumbnailChapters(videoPath, audioPath, thumbnailPath, chaptersPath, outputFileName, t.log, metadata)
 		if err != nil {
 			t.log.WriteString(fmt.Sprintf("FFmpeg command failed: %v\n", err))
 			fmt.Printf("processing failed for task : %v \n", task)
@@ -159,7 +172,6 @@ func Start(playlist []*_youtube.PlaylistEntry, format *youtube.Format, client _y
 		cpuCount = 1
 	}
 
-	fmt.Println(cpuCount)
 	pool := worker.Pool{
 		Tasks:         tasks,
 		MaxConcurrent: cpuCount,
