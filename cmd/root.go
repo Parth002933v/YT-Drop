@@ -36,6 +36,7 @@ func NewRun() *cobra.Command {
 			//main2()
 		},
 	}
+	runCmd.AddCommand(NewVersion(), NewTextRun())
 	return runCmd
 }
 

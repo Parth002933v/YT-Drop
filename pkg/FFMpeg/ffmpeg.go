@@ -9,9 +9,9 @@ import (
 
 // Chapter represents a video chapter
 type Chapter struct {
-	StartTime int64  // Start time in milliseconds
-	EndTime   int64  // End time in milliseconds (will be calculated based on the next chapter's start time)
-	Title     string // Chapter title
+	StartTime int64
+	EndTime   int64
+	Title     string
 }
 
 // parseTime converts HH:MM:SS or MM:SS time strings to milliseconds
@@ -32,22 +32,20 @@ func parseTime(timeStr string) (int64, error) {
 		return 0, fmt.Errorf("invalid time format: %s", timeStr)
 	}
 
-	// Calculate total milliseconds
+	// Calculate milliseconds
 	totalMilliseconds := int64((hours*3600 + minutes*60 + seconds) * 1000)
 	return totalMilliseconds, nil
 }
 
 // ExtractChapters parses the input text and returns a slice of Chapter structs
 func ExtractChapters(text string, videoDuration int64) ([]Chapter, error) {
-	// Updated regex pattern to handle (HH:MM:SS) or (MM:SS) formats and optional leading or trailing spaces
-	pattern := regexp.MustCompile(`\((\d{1,2}:\d{2}(?::\d{2})?)\)\s*(.*)`)
-	//pattern := regexp.MustCompile((?m)(?P<time>\d{2}:\d{2}:\d{2}|\d{2}:\d{2})\)?\s(-)?(\s)?(?P<chapterTitle>.*))
+	pattern := regexp.MustCompile(`(?m)^\s*[^\w\n]*\(?(\d{1,2}:\d{2}(?::\d{2})?)\)?\s*[^\w\n]*\s*(.+)$`)
 	matches := pattern.FindAllStringSubmatch(text, -1)
 
 	var chapters []Chapter
 	for _, match := range matches {
-		timeStr := match[1] // Captured timestamp
-		title := match[2]   // Captured chapter title
+		timeStr := match[1]
+		title := strings.TrimSpace(match[2])
 
 		startTime, err := parseTime(timeStr)
 		if err != nil {
@@ -60,10 +58,18 @@ func ExtractChapters(text string, videoDuration int64) ([]Chapter, error) {
 		})
 	}
 
-	// Set end times for each chapter (next chapter's start time or video duration for the last chapter)
+	// Validate chapter order and assign end times
 	for i := 0; i < len(chapters)-1; i++ {
-		chapters[i].EndTime = chapters[i+1].StartTime
+		current := &chapters[i]
+		next := &chapters[i+1]
+
+		if next.StartTime <= current.StartTime {
+			return nil, fmt.Errorf("invalid chapter timing: chapter %d starts at %dms but previous chapter ends at %dms", i+1, next.StartTime, current.StartTime)
+		}
+		current.EndTime = next.StartTime // Set end time based on next chapter's start time
 	}
+
+	// Set end time for the last chapter based on video duration
 	if len(chapters) > 0 {
 		chapters[len(chapters)-1].EndTime = videoDuration
 	}

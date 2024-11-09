@@ -16,10 +16,7 @@ import (
 	"time"
 )
 
-func init() {
-	NewRun().AddCommand(textRun())
-}
-func textRun() *cobra.Command {
+func NewTextRun() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "test",
 		Short: "short test of how to use it",
