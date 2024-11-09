@@ -14,6 +14,7 @@ func NewVersion() *cobra.Command {
 			cmd.Printf("- os/type: %s\n", runtime.GOOS)
 			cmd.Printf("- os/arch: %s\n", runtime.GOARCH)
 			cmd.Printf("- go/version: %s\n", runtime.Version())
+			cmd.Printf("\n check out the link for all the new releases: %s\n", "https://github.com/Parth002933v/YT-Drop/releases")
 			return nil
 		},
 	}
