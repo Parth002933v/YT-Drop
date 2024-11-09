@@ -27,7 +27,8 @@ A command-line tool for downloading YouTube videos and entire playlists with a c
 4. The application will display a progress bar for each download, allowing you to monitor the status.
 
 ## Preview
-//TODO: 
+![video tutorial](https://github.com/user-attachments/assets/4c545656-ccb5-4837-b966-2d3bbf1ff492)
+![playlist tutorial](https://github.com/user-attachments/assets/edc72016-00ce-4b12-8ea1-029de995caa6)
 
 ## Contributing
 
