@@ -63,10 +63,13 @@ func ExtractChapters(text string, videoDuration int64) ([]Chapter, error) {
 		current := &chapters[i]
 		next := &chapters[i+1]
 
-		if next.StartTime <= current.StartTime {
+		if next.StartTime < current.StartTime {
 			return nil, fmt.Errorf("invalid chapter timing: chapter %d starts at %dms but previous chapter ends at %dms", i+1, next.StartTime, current.StartTime)
+		} else if next.StartTime == current.StartTime {
+			current.EndTime = next.StartTime
+		} else {
+			current.EndTime = next.StartTime
 		}
-		current.EndTime = next.StartTime // Set end time based on next chapter's start time
 	}
 
 	// Set end time for the last chapter based on video duration
