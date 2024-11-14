@@ -3,11 +3,11 @@ package FFMpeg
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
 
-// Chapter represents a video chapter
 type Chapter struct {
 	StartTime int64
 	EndTime   int64
@@ -39,7 +39,8 @@ func parseTime(timeStr string) (int64, error) {
 
 // ExtractChapters parses the input text and returns a slice of Chapter structs
 func ExtractChapters(text string, videoDuration int64) ([]Chapter, error) {
-	pattern := regexp.MustCompile(`(?m)^\s*[^\w\n]*\(?(\d{1,2}:\d{2}(?::\d{2})?)\)?\s*[^\w\n]*\s*(.+)$`)
+	//pattern := regexp.MustCompile(`(?m)^\s*[^\w\n]*\(?(\d{1,2}:\d{2}(?::\d{2})?)\)?\s*[^\w\n]*\s*(.+)$`)
+	pattern := regexp.MustCompile(`(?m)^\s*#?\d*\s*[^\w\n]*\(?(\d{1,2}:\d{2}(?::\d{2})?)\)?\s*[^\w\n]*\s*(.+)$`)
 	matches := pattern.FindAllStringSubmatch(text, -1)
 
 	var chapters []Chapter
@@ -58,13 +59,17 @@ func ExtractChapters(text string, videoDuration int64) ([]Chapter, error) {
 		})
 	}
 
-	// Validate chapter order and assign end times
+	sort.Slice(chapters, func(i, j int) bool {
+		return chapters[i].StartTime < chapters[j].StartTime
+	})
+
+	// Validate chapter order and assign end times, exclude the last element
 	for i := 0; i < len(chapters)-1; i++ {
 		current := &chapters[i]
 		next := &chapters[i+1]
 
 		if next.StartTime < current.StartTime {
-			return nil, fmt.Errorf("invalid chapter timing: chapter %d starts at %dms but previous chapter ends at %dms", i+1, next.StartTime, current.StartTime)
+			return nil, fmt.Errorf("invalid chapter timing: chapter %d : %s starts at %dms but previous chapter ends at %dms", i+1, next.Title, next.StartTime, current.StartTime)
 		} else if next.StartTime == current.StartTime {
 			current.EndTime = next.StartTime
 		} else {
